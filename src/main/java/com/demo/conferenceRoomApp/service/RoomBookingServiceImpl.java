@@ -1,5 +1,7 @@
 package com.demo.conferenceRoomApp.service;
 
+import com.demo.conferenceRoomApp.exception.BookingNotFoundException;
+import com.demo.conferenceRoomApp.exception.RoomBookingException;
 import com.demo.conferenceRoomApp.exception.RoomsNotAvailableException;
 import com.demo.conferenceRoomApp.exception.enums.ErrorCodes;
 import com.demo.conferenceRoomApp.model.dto.BookingRequest;
@@ -55,7 +57,7 @@ public class RoomBookingServiceImpl implements BookingService {
     @Override
     public void deleteBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RoomsNotAvailableException(ErrorCodes.BOOKING_ID_NOT_FOUND));
+                .orElseThrow(() -> new BookingNotFoundException(ErrorCodes.BOOKING_ID_NOT_FOUND));
 
         bookingRepository.deleteById(bookingId);
     }
@@ -83,21 +85,21 @@ public class RoomBookingServiceImpl implements BookingService {
 
     private void validateBookingRequest(BookingRequest bookingRequest) {
         if (bookingRequest.getParticipants() <= 0) {
-            throw new RoomsNotAvailableException(ErrorCodes.NUMBER_OF_PARTICIPANTS_ERROR);
+            throw new RoomBookingException(ErrorCodes.NUMBER_OF_PARTICIPANTS_ERROR);
         }
         validateBookingInterval(bookingRequest.getStartDateTime(), bookingRequest.getEndDateTime());
 
         if (roomBookingValidator.isMaintenanceTimeConflict(bookingRequest.getStartDateTime(), bookingRequest.getEndDateTime())) {
-            throw new RoomsNotAvailableException(ErrorCodes.MAINTENANCE_TIME_ERROR);
+            throw new RoomBookingException(ErrorCodes.MAINTENANCE_TIME_ERROR);
         }
     }
 
     private void validateBookingInterval(LocalDateTime startTime, LocalDateTime endTime) {
         if (!roomBookingValidator.isBookingDateValid(startTime, endTime)) {
-            throw new RoomsNotAvailableException(ErrorCodes.DATE_CONSTRAINT_ERROR);
+            throw new RoomBookingException(ErrorCodes.DATE_CONSTRAINT_ERROR);
         }
             if (!roomBookingValidator.isValidBookingInterval(startTime, endTime)) {
-                throw new RoomsNotAvailableException(ErrorCodes.TIME_CONSTRAINT_ERROR);
+                throw new RoomBookingException(ErrorCodes.TIME_CONSTRAINT_ERROR);
             }
         }
 
