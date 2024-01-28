@@ -3,17 +3,12 @@ import com.demo.conferenceRoomApp.model.entity.ConferenceRoom;
 import com.demo.conferenceRoomApp.model.entity.MaintenanceTime;
 import com.demo.conferenceRoomApp.repository.ConferenceRoomRepository;
 import com.demo.conferenceRoomApp.repository.MaintenanceTimeRepository;
-import com.demo.conferenceRoomApp.security.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import com.demo.conferenceRoomApp.security.entity.User;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 @Component
@@ -22,7 +17,6 @@ public class ApplicationEventListener   {
 
     private final MaintenanceTimeRepository maintenanceTimeRepository;
     private final ConferenceRoomRepository conferenceRoomRepository;
-    private final UserRepository userRepository;
 
     private static final List<MaintenanceTime> MAINTENANCE_TIMES = Arrays.asList(
             new MaintenanceTime(LocalTime.of(9, 0), LocalTime.of(9, 15)),
@@ -37,17 +31,10 @@ public class ApplicationEventListener   {
             new ConferenceRoom("Strive", 20)
     );
 
-    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("Staff");
-    private static final List<User> USER_DETAILS = Arrays.asList(
-            new User("anukriti","Anukriti@123")
-    );
-
-
     @EventListener(ContextRefreshedEvent.class)
     public void onApplicationEvent(ContextRefreshedEvent event) {
         this.saveMaintenanceTimings();
         this.saveConferenceRoom();
-        this.saveUserDetails();
     }
 
     private void saveMaintenanceTimings() {
@@ -58,6 +45,5 @@ public class ApplicationEventListener   {
             conferenceRoomRepository.saveAll(CONFERENCE_ROOMS);
     }
 
-    private void saveUserDetails() { userRepository.saveAll(USER_DETAILS); }
 
 }

@@ -1,8 +1,7 @@
 package com.demo.conferenceRoomApp.service;
 
-import com.demo.conferenceRoomApp.exception.BookingException;
-import com.demo.conferenceRoomApp.exception.BookingNotFoundException;
 import com.demo.conferenceRoomApp.exception.RoomsNotAvailableException;
+import com.demo.conferenceRoomApp.exception.enums.ErrorCodes;
 import com.demo.conferenceRoomApp.model.dto.BookingRequest;
 import com.demo.conferenceRoomApp.model.entity.Booking;
 import com.demo.conferenceRoomApp.model.entity.ConferenceRoom;
@@ -15,15 +14,14 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class BookingServiceImpl implements BookingService {
+public class RoomBookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final ConferenceRoomRepository conferenceRoomRepository;
-    private final BookingValidator bookingValidator;
+    private final RoomBookingValidator roomBookingValidator;
 
     @Override
     @Transactional
@@ -31,18 +29,16 @@ public class BookingServiceImpl implements BookingService {
         validateBookingRequest(bookingRequest);
 
         List<ConferenceRoom> availableRooms = getAvailableRooms(bookingRequest.getStartDateTime(), bookingRequest.getEndDateTime());
-        if (availableRooms.isEmpty()) {
-            throw new RoomsNotAvailableException("Rooms Not Available");
-        }
+        ConferenceRoom conferenceRoom = findBestFitConferenceRoom(availableRooms, bookingRequest.getParticipants());
 
-        ConferenceRoom conferenceRoom = availableRooms.stream()
-                .filter(room -> bookingRequest.getParticipants() <= room.getCapacity())
-                .min(Comparator.comparing(ConferenceRoom::getCapacity))
-                .orElseThrow(() -> new RoomsNotAvailableException("No Room to Accommodate the participants provided"));
+        Booking booking = Booking.builder()
+                .conferenceRoom(conferenceRoom)
+                .participants(bookingRequest.getParticipants())
+                .startTime(bookingRequest.getStartDateTime())
+                .endTime(bookingRequest.getEndDateTime())
+                .build();
 
-        Booking booking = dtoToEntity(bookingRequest, conferenceRoom);
         bookingRepository.save(booking);
-
     }
 
     @Override
@@ -58,13 +54,15 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void deleteBooking(Long bookingId) {
-        bookingRepository.findById(bookingId).orElseThrow(() -> new BookingNotFoundException("BookingId Not Found"));
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RoomsNotAvailableException(ErrorCodes.BOOKING_ID_NOT_FOUND));
+
         bookingRepository.deleteById(bookingId);
     }
 
     private List<ConferenceRoom> getBookedConferenceRooms(LocalDateTime startTime, LocalDateTime endTime) {
         List<Booking> bookings = bookingRepository.findByStartTimeBetween(startTime, endTime);
-        return bookings.stream().map(Booking::getConferenceRoom).collect(Collectors.toList());
+        return bookings.stream().map(Booking::getConferenceRoom).toList();
     }
 
     private List<ConferenceRoom> getAvailableRooms(LocalDateTime startTime, LocalDateTime endTime) {
@@ -73,35 +71,34 @@ public class BookingServiceImpl implements BookingService {
 
         return allConferenceRooms.stream()
                 .filter(conferenceRoom -> !bookedConferenceRooms.contains(conferenceRoom))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    private Booking dtoToEntity(BookingRequest bookingRequest, ConferenceRoom conferenceRoom) {
-        return Booking.builder()
-                .conferenceRoom(conferenceRoom)
-                .participants(bookingRequest.getParticipants())
-                .startTime(bookingRequest.getStartDateTime())
-                .endTime(bookingRequest.getEndDateTime())
-                .build();
+    private ConferenceRoom findBestFitConferenceRoom(List<ConferenceRoom> availableRooms, int participants) {
+        return availableRooms.stream()
+                .filter(room -> participants <= room.getCapacity())
+                .min(Comparator.comparing(ConferenceRoom::getCapacity))
+                .orElseThrow(() -> new RoomsNotAvailableException(ErrorCodes.ROOM_CAPACITY_CONSTRAINT));
     }
 
     private void validateBookingRequest(BookingRequest bookingRequest) {
         if (bookingRequest.getParticipants() <= 0) {
-            throw new BookingException("Number of Participants must be greater than zero");
+            throw new RoomsNotAvailableException(ErrorCodes.NUMBER_OF_PARTICIPANTS_ERROR);
         }
         validateBookingInterval(bookingRequest.getStartDateTime(), bookingRequest.getEndDateTime());
 
-        if (bookingValidator.isMaintainanceTimeConflict(bookingRequest.getStartDateTime(), bookingRequest.getEndDateTime())) {
-            throw new BookingException("Booking cannot be done during maintenance time");
+        if (roomBookingValidator.isMaintenanceTimeConflict(bookingRequest.getStartDateTime(), bookingRequest.getEndDateTime())) {
+            throw new RoomsNotAvailableException(ErrorCodes.MAINTENANCE_TIME_ERROR);
         }
     }
 
     private void validateBookingInterval(LocalDateTime startTime, LocalDateTime endTime) {
-        if (!bookingValidator.isBookingValidCurrentDate(startTime, endTime)) {
-            throw new BookingException("Booking can be done only for the current date");
+        if (!roomBookingValidator.isBookingDateValid(startTime, endTime)) {
+            throw new RoomsNotAvailableException(ErrorCodes.DATE_CONSTRAINT_ERROR);
         }
-        if (!bookingValidator.isValidBookingInterval(startTime, endTime)) {
-            throw new BookingException("Invalid Booking interval. Bookings must be in 15-minute intervals");
+            if (!roomBookingValidator.isValidBookingInterval(startTime, endTime)) {
+                throw new RoomsNotAvailableException(ErrorCodes.TIME_CONSTRAINT_ERROR);
+            }
         }
+
     }
-}

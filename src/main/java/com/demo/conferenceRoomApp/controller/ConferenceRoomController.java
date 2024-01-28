@@ -28,8 +28,8 @@ public class ConferenceRoomController {
 
     public static final String BASE_URI = "conference/api/rooms";
     public static final String AVAILABLE_URI = "/available";
-
     public static final String BOOKING_ID = "/{booking_id}";
+    public static final String BOOKED_ROOMS = "/booked";
 
     private final BookingService bookingService;
 
@@ -38,11 +38,11 @@ public class ConferenceRoomController {
     @Operation(summary = "Fetch all conference rooms")
     @GetMapping
     public ResponseEntity<List<ConferenceRoom>> getAllConferenceRooms() {
-        List<ConferenceRoom> conferenceRooms = conferenceRoomService.getAll();
+        List<ConferenceRoom> conferenceRooms = conferenceRoomService.getAllRooms();
         return ResponseEntity.ok(conferenceRooms);
     }
 
-    @Operation(summary = "Fetch all available rooms")
+    @Operation(summary = "To see all available rooms")
     @GetMapping(AVAILABLE_URI)
     public ResponseEntity<List<ConferenceRoom>> getAvailableRooms(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm") LocalDateTime startTime,
@@ -63,16 +63,16 @@ public class ConferenceRoomController {
         return ResponseEntity.status(HttpStatus.CREATED).body("Room has been booked Successfully");
     }
 
-    @Operation(summary = "Fetch all booked rooms data")
-    @GetMapping
+    @Operation(summary = "To see all occupied rooms")
+    @GetMapping(BOOKED_ROOMS)
     public ResponseEntity<List<Booking>> getAllBookings() {
         List<Booking> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);
     }
 
-    @Operation(summary = "Delete a booked room by ID")
+    @Operation(summary = "To cancel a booking")
     @DeleteMapping(BOOKING_ID)
-    public ResponseEntity<String> deleteBooking(@PathVariable("booking_id") Long bookingId) {
+    public ResponseEntity<String> cancelBooking(@PathVariable("booking_id") Long bookingId) {
         bookingService.deleteBooking(bookingId);
         return ResponseEntity.ok("Your booked room has been vacated");
     }

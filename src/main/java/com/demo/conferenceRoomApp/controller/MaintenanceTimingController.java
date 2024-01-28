@@ -24,7 +24,7 @@ public class MaintenanceTimingController {
     @Operation(summary = "This api contains maintenance timings of the conference rooms")
     @GetMapping
     public ResponseEntity<List<MaintenanceTime>> fetchAllMaintenanceTimings() {
-        List<MaintenanceTime> maintenanceTimes = maintenanceTimeService.getAll();
+        List<MaintenanceTime> maintenanceTimes = maintenanceTimeService.getMaintenanceTimings();
         return ResponseEntity.ok(maintenanceTimes);
     }
 

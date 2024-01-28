@@ -12,7 +12,7 @@ import java.util.List;
 public interface BookingService {
     void bookConferenceRoom(BookingRequest bookingRequest);
     List<Booking> getAllBookings();
-
-    List<ConferenceRoom>  getAvailableConferenceRooms(LocalDateTime startTime, LocalDateTime endTime);
+    List<ConferenceRoom>  getAvailableConferenceRooms(LocalDateTime startTime,
+                                                      LocalDateTime endTime);
     void deleteBooking(Long bookingId);
 }

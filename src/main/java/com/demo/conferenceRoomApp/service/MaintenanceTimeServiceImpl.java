@@ -10,9 +10,11 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MaintenanceTimeServiceImpl implements MaintenanceTimeService {
-    private  final MaintenanceTimeRepository maintenanceTimeRepository;
+
+    private final MaintenanceTimeRepository maintenanceTimeRepository;
+
     @Override
-    public List<MaintenanceTime> getAll() {
+    public List<MaintenanceTime> getMaintenanceTimings() {
         return maintenanceTimeRepository.findAll();
     }
 }

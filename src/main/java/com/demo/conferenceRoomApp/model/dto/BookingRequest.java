@@ -22,6 +22,6 @@ public class BookingRequest {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime endDateTime;
 
-    @Min(value = 1, message = "Participants must be 1 or more")
+    @Min(value = 1, message = "Participants must be equal to or greater than 1")
     private int participants;
 }
